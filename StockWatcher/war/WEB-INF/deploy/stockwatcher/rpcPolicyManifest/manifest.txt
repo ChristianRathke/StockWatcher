@@ -1,0 +1,4 @@
+# Module stockwatcher
+# RPC service class, partial path of RPC policy file
+com.google.gwt.sample.stockwatcher.shared.StockPriceService, FD6EC5262E1431E594E92E34B0BCDF9A.gwt.rpc
+com.google.gwt.sample.stockwatcher.shared.LoginService, 34229475EBA78A72C69D20313BA08067.gwt.rpc
