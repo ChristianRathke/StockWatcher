@@ -13,30 +13,7 @@
 
   <servlet-mapping>
     <servlet-name>jsonStockData</servlet-name>
-    <url-pattern>/stockwatcher/stockPricesJson</url-pattern>
-  </servlet-mapping>
-  
-  
-  
-  <servlet>
-    <servlet-name>stockPriceServiceImpl</servlet-name>
-    <servlet-class>com.google.gwt.sample.stockwatcher.server.StockPriceServiceImpl</servlet-class>
-  </servlet>
-
-  <servlet-mapping>
-    <servlet-name>stockPriceServiceImpl</servlet-name>
     <url-pattern>/stockwatcher/stockPrices</url-pattern>
-  </servlet-mapping>
-
-
-  <servlet>
-    <servlet-name>LoginServiceImpl</servlet-name>
-    <servlet-class>com.google.gwt.sample.stockwatcher.server.LoginServiceImpl</servlet-class>
-  </servlet>
-
-  <servlet-mapping>
-    <servlet-name>LoginServiceImpl</servlet-name>
-    <url-pattern>/stockwatcher/login</url-pattern>
   </servlet-mapping>
   
   <!-- 
