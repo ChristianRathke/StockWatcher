@@ -6,17 +6,16 @@
   </welcome-file-list>
 
   <!-- Servlets -->
+   
   <servlet>
-    <servlet-name>jsonStockData</servlet-name>
-    <servlet-class>com.google.gwt.sample.stockwatcher.server.JsonStockData</servlet-class>
+    <servlet-name>stockService</servlet-name>
+    <servlet-class>com.google.gwt.sample.stockwatcher.server.StockServiceImpl</servlet-class>
   </servlet>
-
+  
   <servlet-mapping>
-    <servlet-name>jsonStockData</servlet-name>
-    <url-pattern>/stockwatcher/stockPricesJson</url-pattern>
+    <servlet-name>stockService</servlet-name>
+    <url-pattern>/stockwatcher/stock</url-pattern>
   </servlet-mapping>
-  
-  
   
   <servlet>
     <servlet-name>stockPriceServiceImpl</servlet-name>

@@ -16,9 +16,12 @@ import com.google.gwt.i18n.client.NumberFormat;
 import com.google.gwt.sample.stockwatcher.shared.LoginInfo;
 import com.google.gwt.sample.stockwatcher.shared.LoginService;
 import com.google.gwt.sample.stockwatcher.shared.LoginServiceAsync;
+import com.google.gwt.sample.stockwatcher.shared.NotLoggedInException;
 import com.google.gwt.sample.stockwatcher.shared.StockPrice;
 import com.google.gwt.sample.stockwatcher.shared.StockPriceService;
 import com.google.gwt.sample.stockwatcher.shared.StockPriceServiceAsync;
+import com.google.gwt.sample.stockwatcher.shared.StockService;
+import com.google.gwt.sample.stockwatcher.shared.StockServiceAsync;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
@@ -46,6 +49,7 @@ public class StockWatcher implements EntryPoint {
 	private ArrayList<String> stocks = new ArrayList<String>();
 
 	private StockPriceServiceAsync stockPriceSvc = GWT.create(StockPriceService.class);
+    private final StockServiceAsync stockService = GWT.create(StockService.class);
 
 	private LoginInfo loginInfo = null;
 	private VerticalPanel loginPanel = new VerticalPanel();
@@ -106,6 +110,8 @@ public class StockWatcher implements EntryPoint {
 		stocksFlexTable.getCellFormatter().addStyleName(0, 1, "watchListNumericColumn");
 		stocksFlexTable.getCellFormatter().addStyleName(0, 2, "watchListNumericColumn");
 		stocksFlexTable.getCellFormatter().addStyleName(0, 3, "watchListRemoveColumn");
+		
+		loadStocks();
 
 		// Assemble Add Stock panel.
 		addPanel.add(newSymbolTextBox);
@@ -150,6 +156,24 @@ public class StockWatcher implements EntryPoint {
 		});
 	}
 
+	
+	private void loadStocks() {
+	    stockService.getStocks(new AsyncCallback<String[]>() {
+	      public void onFailure(Throwable error) {
+	    	  handleError(error);
+	      }
+	      public void onSuccess(String[] symbols) {
+	        displayStocks(symbols);
+	      }
+	    });
+	  }
+
+	  private void displayStocks(String[] symbols) {
+	    for (String symbol : symbols) {
+	      displayStock(symbol);
+	    }
+	  }
+	
 	/**
 	 * Add stock to FlexTable. Executed when the user clicks the addStockButton or
 	 * presses enter in the newSymbolTextBox.
@@ -171,6 +195,22 @@ public class StockWatcher implements EntryPoint {
 		// Don't add the stock if it's already in the table.
 		if (stocks.contains(symbol))
 			return;
+		
+		addStock(symbol);
+	}
+
+	  private void addStock(final String symbol) {
+	    stockService.addStock(symbol, new AsyncCallback<Void>() {
+	      public void onFailure(Throwable error) {
+	    	  handleError(error);
+	      }
+	      public void onSuccess(Void ignore) {
+	        displayStock(symbol);
+	      }
+	    });
+	  }
+	
+	private void displayStock(final String symbol) {
 
 		// Add the stock to the table.
 		int row = stocksFlexTable.getRowCount();
@@ -186,16 +226,33 @@ public class StockWatcher implements EntryPoint {
 		removeStockButton.addStyleDependentName("remove");
 		removeStockButton.addClickHandler(new ClickHandler() {
 			public void onClick(ClickEvent event) {
-				int removedIndex = stocks.indexOf(symbol);
-				stocks.remove(removedIndex);
-				stocksFlexTable.removeRow(removedIndex + 1);
+				removeStock(symbol);
 			}
 		});
 		stocksFlexTable.setWidget(row, 3, removeStockButton);
 
-		// TODO Get the stock price.
+		// Get the stock price.
+		refreshWatchList();
 
 	}
+	
+	
+	private void removeStock(final String symbol) {
+	    stockService.removeStock(symbol, new AsyncCallback<Void>() {
+	      public void onFailure(Throwable error) {
+	    	  handleError(error);
+	      }
+	      public void onSuccess(Void ignore) {
+	        undisplayStock(symbol);
+	      }
+	    });
+	  }
+
+	  private void undisplayStock(String symbol) {
+	    int removedIndex = stocks.indexOf(symbol);
+	    stocks.remove(removedIndex);
+	    stocksFlexTable.removeRow(removedIndex+1);
+	  }
 
 	/**
 	 * Generate random stock prices.
@@ -276,4 +333,11 @@ public class StockWatcher implements EntryPoint {
 
 		changeWidget.setStyleName(changeStyleName);
 	}
+	
+	private void handleError(Throwable error) {
+	    Window.alert(error.getMessage());
+	    if (error instanceof NotLoggedInException) {
+	      Window.Location.replace(loginInfo.getLogoutUrl());
+	    }
+	  }
 }
