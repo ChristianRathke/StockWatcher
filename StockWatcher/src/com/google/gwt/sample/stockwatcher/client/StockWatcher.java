@@ -49,7 +49,7 @@ public class StockWatcher implements EntryPoint {
 	private ArrayList<String> stocks = new ArrayList<String>();
 
 	private StockPriceServiceAsync stockPriceSvc = GWT.create(StockPriceService.class);
-    private final StockServiceAsync stockService = GWT.create(StockService.class);
+	private final StockServiceAsync stockService = GWT.create(StockService.class);
 
 	private LoginInfo loginInfo = null;
 	private VerticalPanel loginPanel = new VerticalPanel();
@@ -110,7 +110,7 @@ public class StockWatcher implements EntryPoint {
 		stocksFlexTable.getCellFormatter().addStyleName(0, 1, "watchListNumericColumn");
 		stocksFlexTable.getCellFormatter().addStyleName(0, 2, "watchListNumericColumn");
 		stocksFlexTable.getCellFormatter().addStyleName(0, 3, "watchListRemoveColumn");
-		
+
 		loadStocks();
 
 		// Assemble Add Stock panel.
@@ -156,24 +156,24 @@ public class StockWatcher implements EntryPoint {
 		});
 	}
 
-	
 	private void loadStocks() {
-	    stockService.getStocks(new AsyncCallback<String[]>() {
-	      public void onFailure(Throwable error) {
-	    	  handleError(error);
-	      }
-	      public void onSuccess(String[] symbols) {
-	        displayStocks(symbols);
-	      }
-	    });
-	  }
+		stockService.getStocks(new AsyncCallback<String[]>() {
+			public void onFailure(Throwable error) {
+				handleError(error);
+			}
 
-	  private void displayStocks(String[] symbols) {
-	    for (String symbol : symbols) {
-	      displayStock(symbol);
-	    }
-	  }
-	
+			public void onSuccess(String[] symbols) {
+				displayStocks(symbols);
+			}
+		});
+	}
+
+	private void displayStocks(String[] symbols) {
+		for (String symbol : symbols) {
+			displayStock(symbol);
+		}
+	}
+
 	/**
 	 * Add stock to FlexTable. Executed when the user clicks the addStockButton or
 	 * presses enter in the newSymbolTextBox.
@@ -195,21 +195,22 @@ public class StockWatcher implements EntryPoint {
 		// Don't add the stock if it's already in the table.
 		if (stocks.contains(symbol))
 			return;
-		
+
 		addStock(symbol);
 	}
 
-	  private void addStock(final String symbol) {
-	    stockService.addStock(symbol, new AsyncCallback<Void>() {
-	      public void onFailure(Throwable error) {
-	    	  handleError(error);
-	      }
-	      public void onSuccess(Void ignore) {
-	        displayStock(symbol);
-	      }
-	    });
-	  }
-	
+	private void addStock(final String symbol) {
+		stockService.addStock(symbol, new AsyncCallback<Void>() {
+			public void onFailure(Throwable error) {
+				handleError(error);
+			}
+
+			public void onSuccess(Void ignore) {
+				displayStock(symbol);
+			}
+		});
+	}
+
 	private void displayStock(final String symbol) {
 
 		// Add the stock to the table.
@@ -235,24 +236,24 @@ public class StockWatcher implements EntryPoint {
 		refreshWatchList();
 
 	}
-	
-	
-	private void removeStock(final String symbol) {
-	    stockService.removeStock(symbol, new AsyncCallback<Void>() {
-	      public void onFailure(Throwable error) {
-	    	  handleError(error);
-	      }
-	      public void onSuccess(Void ignore) {
-	        undisplayStock(symbol);
-	      }
-	    });
-	  }
 
-	  private void undisplayStock(String symbol) {
-	    int removedIndex = stocks.indexOf(symbol);
-	    stocks.remove(removedIndex);
-	    stocksFlexTable.removeRow(removedIndex+1);
-	  }
+	private void removeStock(final String symbol) {
+		stockService.removeStock(symbol, new AsyncCallback<Void>() {
+			public void onFailure(Throwable error) {
+				handleError(error);
+			}
+
+			public void onSuccess(Void ignore) {
+				undisplayStock(symbol);
+			}
+		});
+	}
+
+	private void undisplayStock(String symbol) {
+		int removedIndex = stocks.indexOf(symbol);
+		stocks.remove(removedIndex);
+		stocksFlexTable.removeRow(removedIndex + 1);
+	}
 
 	/**
 	 * Generate random stock prices.
@@ -283,8 +284,7 @@ public class StockWatcher implements EntryPoint {
 	/**
 	 * Update the Price and Change fields all the rows in the stock table.
 	 * 
-	 * @param prices
-	 *            Stock data for all rows.
+	 * @param prices Stock data for all rows.
 	 */
 	private void updateTable(StockPrice[] prices) {
 		for (int i = 0; i < prices.length; i++) {
@@ -299,8 +299,7 @@ public class StockWatcher implements EntryPoint {
 	/**
 	 * Update a single row in the stock table.
 	 * 
-	 * @param price
-	 *            Stock data for a single row.
+	 * @param price Stock data for a single row.
 	 */
 	private void updateTable(StockPrice price) {
 		// Make sure the stock is still in the stock table.
@@ -333,11 +332,11 @@ public class StockWatcher implements EntryPoint {
 
 		changeWidget.setStyleName(changeStyleName);
 	}
-	
+
 	private void handleError(Throwable error) {
-	    Window.alert(error.getMessage());
-	    if (error instanceof NotLoggedInException) {
-	      Window.Location.replace(loginInfo.getLogoutUrl());
-	    }
-	  }
+		Window.alert(error.getMessage());
+		if (error instanceof NotLoggedInException) {
+			Window.Location.replace(loginInfo.getLogoutUrl());
+		}
+	}
 }

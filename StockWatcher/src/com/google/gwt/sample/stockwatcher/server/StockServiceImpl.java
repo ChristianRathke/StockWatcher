@@ -1,15 +1,18 @@
 package com.google.gwt.sample.stockwatcher.server;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import javax.jdo.JDOHelper;
-import javax.jdo.PersistenceManager;
-import javax.jdo.PersistenceManagerFactory;
-import javax.jdo.Query;
-
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.FetchOptions;
+import com.google.appengine.api.datastore.PreparedQuery;
+import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.Filter;
+import com.google.appengine.api.datastore.Query.FilterOperator;
+import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
@@ -17,77 +20,62 @@ import com.google.gwt.sample.stockwatcher.shared.NotLoggedInException;
 import com.google.gwt.sample.stockwatcher.shared.StockService;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
-public class StockServiceImpl extends RemoteServiceServlet implements
-StockService {
+public class StockServiceImpl extends RemoteServiceServlet implements StockService {
 
-  private static final Logger LOG = Logger.getLogger(StockServiceImpl.class.getName());
-  private static final PersistenceManagerFactory PMF =
-      JDOHelper.getPersistenceManagerFactory("transactions-optional");
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
-  public void addStock(String symbol) throws NotLoggedInException {
-    checkLoggedIn();
-    PersistenceManager pm = getPersistenceManager();
-    try {
-      pm.makePersistent(new Stock(getUser(), symbol));
-    } finally {
-      pm.close();
-    }
-    
-    System.out.println("adding a stock ...");
-  }
+	public void addStock(String symbol) throws NotLoggedInException {
+		checkLoggedIn();
 
-  public void removeStock(String symbol) throws NotLoggedInException {
-    checkLoggedIn();
-    PersistenceManager pm = getPersistenceManager();
-    try {
-      long deleteCount = 0;
-      Query q = pm.newQuery(Stock.class, "user == u");
-      q.declareParameters("com.google.appengine.api.users.User u");
-      List<Stock> stocks = (List<Stock>) q.execute(getUser());
-      for (Stock stock : stocks) {
-        if (symbol.equals(stock.getSymbol())) {
-          deleteCount++;
-          pm.deletePersistent(stock);
-        }
-      }
-      if (deleteCount != 1) {
-        LOG.log(Level.WARNING, "removeStock deleted "+deleteCount+" Stocks");
-      }
-    } finally {
-      pm.close();
-    }
-  }
+		Entity stock = new Entity("Stock", symbol);
+		stock.setProperty("user", getUser());
+		stock.setProperty("symbol", symbol);
+		stock.setProperty("createDate", new Date());
 
-  public String[] getStocks() throws NotLoggedInException {
-    checkLoggedIn();
-    PersistenceManager pm = getPersistenceManager();
-    List<String> symbols = new ArrayList<String>();
-    try {
-      Query q = pm.newQuery(Stock.class, "user == u");
-      q.declareParameters("com.google.appengine.api.users.User u");
-      q.setOrdering("createDate");
-      List<Stock> stocks = (List<Stock>) q.execute(getUser());
-      for (Stock stock : stocks) {
-        symbols.add(stock.getSymbol());
-      }
-    } finally {
-      pm.close();
-    }
-    return (String[]) symbols.toArray(new String[0]);
-  }
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		datastore.put(stock);
+	}
 
-  private void checkLoggedIn() throws NotLoggedInException {
-    if (getUser() == null) {
-      throw new NotLoggedInException("Not logged in.");
-    }
-  }
+	public void removeStock(String symbol) throws NotLoggedInException {
+		checkLoggedIn();
+		
 
-  private User getUser() {
-    UserService userService = UserServiceFactory.getUserService();
-    return userService.getCurrentUser();
-  }
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		
+		Query q = new Query("Stock").setFilter(new FilterPredicate("symbol", FilterOperator.EQUAL, symbol));
+		PreparedQuery pq = datastore.prepare(q);
+		Entity result = pq.asSingleEntity();
+		
+		datastore.delete(result.getKey());
+	}
 
-  private PersistenceManager getPersistenceManager() {
-    return PMF.getPersistenceManager();
-  }
+	public String[] getStocks() throws NotLoggedInException {
+		checkLoggedIn();
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+
+		List<String> symbols = new ArrayList<String>();
+		Query q = new Query("Stock").setFilter(new FilterPredicate("user", FilterOperator.EQUAL, getUser()));
+
+		PreparedQuery p = datastore.prepare(q);
+		List<Entity> stocks = p.asList(FetchOptions.Builder.withDefaults());
+
+		for (Entity stock : stocks) {
+			symbols.add((String) stock.getProperty("symbol"));
+		}
+		return (String[]) symbols.toArray(new String[0]);
+	}
+
+	private void checkLoggedIn() throws NotLoggedInException {
+		if (getUser() == null) {
+			throw new NotLoggedInException("Not logged in.");
+		}
+	}
+
+	private User getUser() {
+		UserService userService = UserServiceFactory.getUserService();
+		return userService.getCurrentUser();
+	}
 }
