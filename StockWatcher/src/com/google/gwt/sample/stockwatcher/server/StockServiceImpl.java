@@ -10,7 +10,6 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
-import com.google.appengine.api.datastore.Query.Filter;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.users.User;
@@ -26,38 +25,36 @@ public class StockServiceImpl extends RemoteServiceServlet implements StockServi
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 
 	public void addStock(String symbol) throws NotLoggedInException {
-		checkLoggedIn();
+		Entity user = checkLoggedIn();
 
-		Entity stock = new Entity("Stock", symbol);
-		stock.setProperty("user", getUser());
+		Entity stock = new Entity("Stock", user.getKey());
 		stock.setProperty("symbol", symbol);
 		stock.setProperty("createDate", new Date());
 
-		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		datastore.put(stock);
 	}
 
 	public void removeStock(String symbol) throws NotLoggedInException {
-		checkLoggedIn();
-		
+		Entity user = checkLoggedIn();
 
-		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		
-		Query q = new Query("Stock").setFilter(new FilterPredicate("symbol", FilterOperator.EQUAL, symbol));
+		Query q = new Query("Stock").setAncestor(user.getKey());
+		q.setFilter(new FilterPredicate("symbol", FilterOperator.EQUAL, symbol));
 		PreparedQuery pq = datastore.prepare(q);
 		Entity result = pq.asSingleEntity();
-		
-		datastore.delete(result.getKey());
+
+		if (result!=null) {
+			datastore.delete(result.getKey());
+		}
 	}
 
 	public String[] getStocks() throws NotLoggedInException {
-		checkLoggedIn();
-		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		Entity user = checkLoggedIn();
 
 		List<String> symbols = new ArrayList<String>();
-		Query q = new Query("Stock").setFilter(new FilterPredicate("user", FilterOperator.EQUAL, getUser()));
+		Query q = new Query("Stock").setAncestor(user.getKey());
 
 		PreparedQuery p = datastore.prepare(q);
 		List<Entity> stocks = p.asList(FetchOptions.Builder.withDefaults());
@@ -68,10 +65,23 @@ public class StockServiceImpl extends RemoteServiceServlet implements StockServi
 		return (String[]) symbols.toArray(new String[0]);
 	}
 
-	private void checkLoggedIn() throws NotLoggedInException {
-		if (getUser() == null) {
+	private Entity checkLoggedIn() throws NotLoggedInException {
+		User u = getUser();
+		if (u == null) {
 			throw new NotLoggedInException("Not logged in.");
 		}
+		
+		Query q = new Query("User").setFilter(new FilterPredicate("email", FilterOperator.EQUAL, u.getEmail()));
+		PreparedQuery pq = datastore.prepare(q);
+		Entity user = pq.asSingleEntity();
+
+		if (user == null) {
+			user = new Entity("User");
+			user.setProperty("user", u);
+			user.setProperty("email", u.getEmail());
+			datastore.put(user);
+		}
+		return user;
 	}
 
 	private User getUser() {

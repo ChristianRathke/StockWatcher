@@ -4,7 +4,12 @@ import java.io.Serializable;
 
 public class NotLoggedInException extends Exception implements Serializable {
 
-  public NotLoggedInException() {
+  /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+public NotLoggedInException() {
     super();
   }
 
